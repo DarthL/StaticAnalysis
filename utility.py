@@ -1,7 +1,6 @@
 import os
 import struct
 from segment import Segment
-
 MACHO_HEADER_SIZE=0x1c
 MACHO_MAGIC=0xFEEDFACE
 class Utility:
@@ -50,8 +49,20 @@ class Utility:
                     if section in sec.secName:
                         return sec.fileoff
 
-
-
-
+    def readStringFromOffsetOfFile(self,offset,f):
+        result=''
+        f.seek(offset)
+        strlength = 0
+        while ord(f.read(1)) != 0:
+            strlength=strlength+1
+        f.seek(offset)
+        if strlength !=0:
+            result = f.read(strlength)
+        return result
+    
+    def getFileOffFromVmAddr(self,vmaddr):
+        for seg in self.segments:
+            if seg.vmaddr<=vmaddr and seg.vmaddr+seg.vmsize>=vmaddr:
+                return seg.fileoff+vmaddr-seg.vmaddr
 
 
