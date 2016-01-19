@@ -3,6 +3,7 @@ from common_utility import readStringFromOffsetOfFile,readVMData
 import struct
 import os
 import pdb
+from objc_class import Objc_Class
 class extracttool:
     def __init__(self,path):
         self.path = os.path.abspath(path)
@@ -17,25 +18,20 @@ class extracttool:
         while secOffset < sec.fileoff+sec.vmsize:
             with open(self.path,'rb') as f:
                 f.seek(secOffset)
-                curclassVM=0
                 curclassVM = readVMData(f.tell(),f,self.is64bit) #vm_addr
                 curclassOff = self.macho_utility.getFileOffFromVmAddr(curclassVM) #in __DATA.__objc_data
-                f.seek(curclassOff+0x10)
-                if self.is64bit:
-                    f.read(0x10)
-                dataVMaddr = readVMData(f.tell(),f,self.is64bit)#vm_addr
-                dataOffset = self.macho_utility.getFileOffFromVmAddr(dataVMaddr)  #in __DATA.__objc_const
-                f.seek(dataOffset+0x10)#0x10 in 32bit 0x18 in 64bit 
-                if self.is64bit:
-                    f.read(0x8)   
-                nameVMaddr = readVMData(f.tell(),f,self.is64bit)
-                nameOffset = self.macho_utility.getFileOffFromVmAddr(nameVMaddr)
-                name = readStringFromOffsetOfFile(nameOffset,f)
-                results.append(name)
+                curObjc_class = Objc_Class(self,f,curclassOff,self.is64bit)
+
+                results.append(curObjc_class)
                 secOffset = secOffset + 0x4 #every 4 bytes a class in 32bit
                 if self.is64bit:
                     secOffset = secOffset + 0x4 #every 8 bytes a class in 64bit
-        return results
+        return results 
     
     def extractLibs(self):
-        return self.macho_utility.libs 
+        return self.macho_utility.libs
+    def extractIndSyms(self):
+         with open(self.path,'rb') as f:
+             cmdOffset =  self.macho_utility.loadcommands["LD_DYSYMTAB"]
+             f.seek(cmdOffset)
+             print cmdOffset

@@ -1,8 +1,6 @@
-from utility import Utility
+from macho_utility import Macho_Utility
 import sys
 if __name__=='__main__':
-    ut = Utility(sys.argv[1])
-    if ut.is64bit(0):
-        print "64bit"
-    else:
-        print "32bit"
+    machut = Macho_Utility(sys.argv[1])
+    machut.initLoadCommand()
+    print hex(machut.getFileOffFromVmAddr(int(sys.argv[2],0)))

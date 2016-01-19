@@ -9,7 +9,11 @@ def main():
     classes = vextracttool.extractclasses()
     libs    = vextracttool.extractLibs()
     print classes
+    for sclass in classes:
+        print sclass.name
+        print sclass.methods
     print libs
+    vextracttool.extractIndSyms()
 
 if __name__=='__main__':
     main()

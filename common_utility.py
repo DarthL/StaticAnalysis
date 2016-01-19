@@ -11,6 +11,7 @@ def readStringFromOffsetOfFile(offset,f):
         return result
 
 def readVMData(offset,f,is64bit):
+    f.seek(offset)
     if is64bit:
         return int(struct.unpack('<Q',f.read(8))[0])
     else:

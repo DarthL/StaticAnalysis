@@ -13,7 +13,8 @@ class Macho_Utility:
     def __init__(self,path):
         self.path = path
         self.segments = []
-        self.libs= [] 
+        self.libs= []
+        self.loadcommands = {}
         print "utility inited with path %s" % path
     
     def is64bit(self,archoffset):
@@ -55,21 +56,28 @@ class Macho_Utility:
                     cmdSize = int(struct.unpack('<L',f.read(4))[0])
                     if cmdName == 0x01 or cmdName == 0x19:
                         #segment
-                        segment = Segment(f,f.tell(),self.is64bit(0)) #f.tell()will change in called-Function
+                        #self.loadcommands["LC_SEGMENT"]=f.tell()
+                        segment = Segment(f,f.tell(),self.is64bit(0)) #f.tell()will change in called-Function           
                         self.segments.append(segment)
                     elif cmdName == 0x0c or cmdName == 0x8000001c:
                         if cmdName == 0x0c:
                             #LC_LOAD_DYLIB
+                            #self.loadcommands["LC_LOAD_DYLIB"]=f.tell()
                             lcdylib = LcLoadDylib(f,f.tell())
                             self.libs.append(lcdylib.name)
                             f.seek(fileOff+cmdSize)
                         else:
                             #LC_RPATH
+                            #self.loadcommands["LC_RPATH"]=f.tell()
                             pdb.set_trace()
                             f.read(4) #  strOffset
                             rpath = readStringFromOffsetOfFile(f.tell(),f)
                             self.libs.append(rpath)
                             f.seek(fileOff+cmdSize)
+                    elif cmdName == 0xB:
+                        #LD_DYSYMTAB
+                        self.loadcommands["LD_DYSYMTAB"]=f.tell()-0x8
+                        f.seek(f.tell()-0x8+cmdSize)
                     else:
                         f.seek(f.tell()-0x8+cmdSize)
                         continue
