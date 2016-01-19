@@ -2,15 +2,18 @@ import os
 import struct
 import pdb
 from segment import Segment
+from lcloaddylib import LcLoadDylib
+from  common_utility import readStringFromOffsetOfFile
 MACHO_HEADER_SIZE_32bit=0x1c
 MACHO_HEADER_SIZE_64bit=0x20
 MACHO_MAGIC_iOS=0xFEEDFACE
 MACHO_MAGIC_Mac=0xFEEDFACF
 
-class Utility:
+class Macho_Utility:
     def __init__(self,path):
         self.path = path
         self.segments = []
+        self.libs= [] 
         print "utility inited with path %s" % path
     
     def is64bit(self,archoffset):
@@ -31,7 +34,7 @@ class Utility:
                 magic = int(struct.unpack('<L',f.read(4))[0]) 
                 return magic == MACHO_MAGIC_iOS or magic == MACHO_MAGIC_Mac
 
-    def findallSegments(self):
+    def initLoadCommand(self):
         with open(self.path,'rb') as f:            
             if self.isfat():
                 #find first arch
@@ -47,12 +50,28 @@ class Utility:
                 index = 0
                 while index < LCcount:
                     index = index+1
+                    fileOff = f.tell()
                     cmdName = int(struct.unpack('<L',f.read(4))[0])
+                    cmdSize = int(struct.unpack('<L',f.read(4))[0])
                     if cmdName == 0x01 or cmdName == 0x19:
                         #segment
-                        segment = Segment(f,f.tell(),self.is64bit(0))
+                        segment = Segment(f,f.tell(),self.is64bit(0)) #f.tell()will change in called-Function
                         self.segments.append(segment)
+                    elif cmdName == 0x0c or cmdName == 0x8000001c:
+                        if cmdName == 0x0c:
+                            #LC_LOAD_DYLIB
+                            lcdylib = LcLoadDylib(f,f.tell())
+                            self.libs.append(lcdylib.name)
+                            f.seek(fileOff+cmdSize)
+                        else:
+                            #LC_RPATH
+                            pdb.set_trace()
+                            f.read(4) #  strOffset
+                            rpath = readStringFromOffsetOfFile(f.tell(),f)
+                            self.libs.append(rpath)
+                            f.seek(fileOff+cmdSize)
                     else:
+                        f.seek(f.tell()-0x8+cmdSize)
                         continue
 
     def findSegandSecInFile(self,segment,section):
@@ -61,25 +80,6 @@ class Utility:
                 for sec in seg.sections:
                     if section in sec.secName:
                         return sec
-    
-    def readVMData(self,offset,f,is64bit):
-        if is64bit:
-            return int(struct.unpack('<Q',f.read(8))[0])
-        else:
-            return int(struct.unpack('<L',f.read(4))[0])
-            
-        
-        
-    def readStringFromOffsetOfFile(self,offset,f):
-        result=''
-        f.seek(offset)
-        strlength = 0
-        while ord(f.read(1)) != 0:
-            strlength=strlength+1
-        f.seek(offset)
-        if strlength !=0:
-            result = f.read(strlength)
-        return result
     
     def getFileOffFromVmAddr(self,vmaddr):
         for seg in self.segments:

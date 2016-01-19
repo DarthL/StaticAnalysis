@@ -7,6 +7,9 @@ def main():
         exit(-1)
     vextracttool=extracttool(sys.argv[1])
     classes = vextracttool.extractclasses()
+    libs    = vextracttool.extractLibs()
     print classes
+    print libs
+
 if __name__=='__main__':
     main()

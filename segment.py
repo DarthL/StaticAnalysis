@@ -4,7 +4,6 @@ import pdb
 class Segment:
     def __init__(self,f,offset,is64bit=False):
         f.seek(offset)
-        self.cmdsize  = int(struct.unpack('<L',f.read(4))[0])
         self.segName  = f.read(16)
         if is64bit:
             self.vmaddr   = int(struct.unpack('<Q',f.read(8))[0])
